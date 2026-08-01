@@ -41,6 +41,7 @@ input_data = pd.DataFrame([{
 
 if st.button("Predict Engine Condition"):
     prediction = model.predict(input_data)[0]
+    probability = model.predict_proba(input_data)[0][prediction]
     result = "Faulty" if prediction == 1 else "Normal"
     st.subheader("Prediction Result:")
-    st.success(f"The model predicts: **{result}**")
+    st.success(f"The model predicts: **{result}** ({probability:.1%} confidence)")
