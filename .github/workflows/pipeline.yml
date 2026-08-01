@@ -1,0 +1,59 @@
+name: Predictive Maintenance CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main            # Automatically triggers on push to the main branch
+  workflow_dispatch:     # lets you click "Run workflow" in the Actions tab
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------- JOB 1: Data Preparation ----------
+  data-preparation:
+    name: Data Preparation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+      - name: Prepare train/test splits
+        run: python predictive_maintenance_project/model_building/prep.py
+      - name: Upload train/test splits
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-splits
+          path: predictive_maintenance_project/data/*.csv
+
+  # ---------- JOB 2: Model Training + MLflow Tracking ----------
+  model-training:
+    name: Model Training
+    needs: data-preparation          # waits for Job 1 to finish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r predictive_maintenance_project/requirements.txt
+      - name: Download train/test splits
+        uses: actions/download-artifact@v4
+        with:
+          name: data-splits
+          path: predictive_maintenance_project/data
+      - name: Start MLflow tracking server
+        run: |
+          nohup mlflow ui --host 0.0.0.0 --port 5000 &   # Run MLflow UI in the background
+          sleep 5                                        # give the server a moment to start
+      - name: Train model
+        run: python predictive_maintenance_project/model_building/train.py
+      - name: Upload trained model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: predictive_maintenance_project/model_building/best_engine_maintenance_model_v1.joblib

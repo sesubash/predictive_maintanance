@@ -1,0 +1,10 @@
+.env
+.venv/
+.docx_venv/
+__pycache__/
+*.pyc
+mlruns/
+mlartifacts/
+mlflow.db
+.ipynb_checkpoints/
+.DS_Store
